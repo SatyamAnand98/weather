@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fieldClassName } from "@/lib/styles";
+import { fieldClassName, searchResultButtonClassName } from "@/lib/styles";
 import { clampCoordinate, cn } from "@/lib/utils";
 import type { GeocodingResult, LocationChoice } from "@/types/weather";
 
@@ -149,10 +149,11 @@ export function LocationPanel({ location, onLocationChange }: Props) {
   }
 
   function selectSearchResult(result: GeocodingResult) {
+    const displayName = [result.name, result.admin1, result.country].filter(Boolean).join(", ");
     const nextLocation: LocationChoice = {
       latitude: result.latitude,
       longitude: result.longitude,
-      name: [result.name, result.admin1, result.country].filter(Boolean).join(", "),
+      name: displayName,
       country: result.country,
       admin1: result.admin1,
       timezone: result.timezone,
@@ -160,6 +161,12 @@ export function LocationPanel({ location, onLocationChange }: Props) {
       source: "search"
     };
 
+    setResults([]);
+    setSearchStatus("idle");
+    setSearchError("");
+    setQuery(displayName);
+    setManualLatitude(result.latitude.toFixed(5));
+    setManualLongitude(result.longitude.toFixed(5));
     setMapPoint({ latitude: result.latitude, longitude: result.longitude });
     onLocationChange(nextLocation);
   }
@@ -196,8 +203,8 @@ export function LocationPanel({ location, onLocationChange }: Props) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-5 lg:grid-cols-[0.95fr_1.25fr]">
-          <div className="space-y-4">
-            <section className="rounded-[8px] border border-black/10 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.05]">
+          <div className="relative z-20 space-y-4">
+            <section className="relative z-30 rounded-[8px] border border-black/10 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.05]">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-weather-teal/[0.14] text-weather-teal">
                   <LocateFixed className="h-5 w-5" />
@@ -234,7 +241,7 @@ export function LocationPanel({ location, onLocationChange }: Props) {
                 placeholder="Search city, town, or postal code"
                 value={query}
               />
-              <div className="mt-3 space-y-2">
+              <div className="relative z-40 mt-3 space-y-2">
                 {searchStatus === "loading" ? (
                   <>
                     <Skeleton className="h-10" />
@@ -244,8 +251,12 @@ export function LocationPanel({ location, onLocationChange }: Props) {
                 {searchStatus === "error" ? <p className="text-sm text-weather-coral">{searchError}</p> : null}
                 {results.map((result) => (
                   <button
-                    className="flex w-full items-center justify-between gap-3 rounded-[8px] border border-black/10 bg-white px-3 py-2 text-left text-sm text-ink-900 transition hover:border-weather-teal/[0.45] hover:bg-weather-teal/[0.08] dark:border-white/20 dark:bg-ink-800 dark:text-ink-50 dark:hover:bg-ink-700"
+                    className={searchResultButtonClassName}
                     key={result.id}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      selectSearchResult(result);
+                    }}
                     onClick={() => selectSearchResult(result)}
                     type="button"
                   >
@@ -303,7 +314,7 @@ export function LocationPanel({ location, onLocationChange }: Props) {
             </section>
           </div>
 
-          <section className="min-w-0 rounded-[8px] border border-black/10 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.05]">
+          <section className="relative z-0 min-w-0 rounded-[8px] border border-black/10 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.05]">
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="font-semibold">Map picker</h3>
